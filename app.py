@@ -11,9 +11,17 @@ Run:
 Then open http://localhost:5000  (or deploy behind your real domain / reverse proxy).
 """
 
+import os
+import sys
 from datetime import datetime
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
+
+
+def log(msg):
+    # Render (and most host logs) buffer stdout unless we flush explicitly.
+    print(msg, flush=True)
+    sys.stdout.flush()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "change-this-secret"
@@ -53,7 +61,7 @@ def on_client_info(data):
         return
     info["model"] = (data or {}).get("model") or "Unknown"
     ts = info["connected_at"].strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[ENTRY]  {ts}  {info['ip']}  {info['model']}")
+    log(f"[ENTRY]  {ts}  {info['ip']}  {info['model']}")
 
 
 @socketio.on("disconnect")
@@ -65,8 +73,9 @@ def on_disconnect():
     duration = now - info["connected_at"]
     ts = now.strftime("%Y-%m-%d %H:%M:%S")
     model = info["model"] or "Unknown"
-    print(f"[EXIT]   {ts}  {info['ip']}  {model}  (on site: {duration})")
+    log(f"[EXIT]   {ts}  {info['ip']}  {model}  (on site: {duration})")
 
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))  # Render injects PORT; 5000 is the local fallback
+    socketio.run(app, host="0.0.0.0", port=port)
