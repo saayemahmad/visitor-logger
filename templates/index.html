@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ডোমেইন ডিলিট করা হয়েছে</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f7f8;
+    --text: #1c1c1e;
+    --muted: #6b6b73;
+    --line: #e4e4e7;
+    --accent: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214;
+      --surface: #1a1a1d;
+      --text: #ededf0;
+      --muted: #9a9aa3;
+      --line: #2b2b30;
+      --accent: #ef6b5b;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hind Siliguri", "Noto Sans Bengali", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  main {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 24px 32px;
+    flex: 1;
+  }
+  h1 { font-size: 26px; font-weight: 600; line-height: 1.35; }
+  .domain { color: var(--muted); margin-top: 2px; font-size: 17px; }
+  .lead { margin-top: 20px; font-size: 24px; line-height: 1.5; font-weight: 500; color: var(--text); }
+
+  .price {
+    margin-top: 40px;
+    max-width: 640px;
+    padding: 28px 24px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .price .label { color: var(--muted); font-size: 15px; }
+  .price .amount {
+    margin-top: 4px;
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .price .unit { font-size: 0.4em; font-weight: 500; letter-spacing: 0; }
+  .price .hint { margin-top: 8px; color: var(--muted); font-size: 14px; }
+
+  dl { margin-top: 28px; max-width: 640px; border-top: 1px solid var(--line); }
+  dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  dt { color: var(--muted); }
+  dd { text-align: right; font-weight: 500; }
+
+  .code {
+    margin-top: 28px;
+    max-width: 640px;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Hind Siliguri", "Noto Sans Bengali", monospace;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .code .row { display: grid; grid-template-columns: auto auto 1fr; column-gap: 10px; }
+  .code .row + .row { margin-top: 4px; }
+  .code .eq { color: var(--muted); }
+  .code .v { overflow-wrap: anywhere; }
+  .code .red { color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  footer a { color: inherit; }
+
+  @media (max-width: 520px) {
+    main { padding-top: 40px; }
+    h1 { font-size: 22px; }
+    .lead { font-size: 20px; }
+    .price .amount { font-size: 52px; }
+    dl > div { flex-direction: column; gap: 0; }
+    dd { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>ডোমেইনটি ডিলিট করা হয়েছে</h1>
+  <p class="domain" id="domain">moo.qzz.io</p>
+
+  <p class="lead">মেয়াদ শেষ হওয়ার আগেই ডোমেইনটি ডিলিট করা হয়েছে এবং DNS নেমসার্ভার সরানো হয়েছে।</p>
+
+  <div class="code" role="group" aria-label="ডোমেইন তথ্য">
+    <div class="row"><span class="k">ডোমেইন মালিক</span><span class="eq">=</span><span class="v">Sayem Ahmed</span></div>
+    <div class="row"><span class="k">DNS Nameservers</span><span class="eq">=</span><span class="v red">shajeda.pakhi.jann.io.cloud<br>shajeda.amar.niqab.queen.cloud</span></div>
+  </div>
+
+  <section class="price" aria-label="পুনরায় কেনার খরচ">
+    <div class="label">পুনরায় কিনতে খরচ</div>
+    <div class="amount">৳৪,৮৬৫ <span class="unit">/= টাকা</span></div>
+    <div class="hint">প্রতি বছর · ডিলিট করা ডোমেইন রিনিউ করা যায় না, নতুন করে কিনতে হয়।</div>
+  </section>
+
+  <dl>
+    <div><dt>মেয়াদ ছিল</dt><dd id="expiry">৭ সেপ্টেম্বর ২০২৭ পর্যন্ত</dd></div>
+    <div><dt>ডিলিট করা হয়েছে</dt><dd id="deleted">১৯ অক্টোবর ২০২৬</dd></div>
+    <div><dt>অব্যবহৃত মেয়াদ</dt><dd id="days">৩২৩ দিন</dd></div>
+  </dl>
+</main>
+
+<footer>
+  &copy; <span id="year">২০২৬</span> <span id="company">DomainHub</span>
+  &nbsp;&middot;&nbsp; <a id="contact" href="mailto:hubsupport@domain.com">hubsupport@domain.com</a>
+</footer>
+
+<script>
+  // ---- এখানে মান পরিবর্তন করুন ----
+  var CONFIG = {
+    company: "DomainHub",
+    email: "hubsupport@domain.com",
+    domain: "moo.qzz.io",        // "" দিলে ভিজিটর যে ঠিকানায় এসেছে সেটাই দেখাবে
+    expiry: "2027-09-07",        // আসল মেয়াদ শেষের তারিখ
+    deletedOn: "2026-10-19"      // ডিলিট করার তারিখ
+  };
+  // --------------------------------
+
+  var fmt = { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" };
+  function d(s) { return new Date(s + "T00:00:00Z"); }
+  function bn(n) { return n.toLocaleString("bn-BD", { useGrouping: false }); }
+  function set(id, v) { document.getElementById(id).textContent = v; }
+
+  var host = CONFIG.domain || location.hostname || "moo.qzz.io";
+  var days = Math.max(0, Math.round((d(CONFIG.expiry) - d(CONFIG.deletedOn)) / 864e5));
+
+  set("domain", host);
+  set("expiry", d(CONFIG.expiry).toLocaleDateString("bn-BD", fmt) + " পর্যন্ত");
+  set("deleted", d(CONFIG.deletedOn).toLocaleDateString("bn-BD", fmt));
+  set("days", bn(days) + " দিন");
+  set("company", CONFIG.company);
+  set("year", bn(new Date().getFullYear()));
+  var a = document.getElementById("contact");
+  a.href = "mailto:" + CONFIG.email;
+  a.textContent = CONFIG.email;
+  document.title = host + " ডিলিট করা হয়েছে";
+</script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+(function () {
+  var socket = io();
+
+  function sendInfo(model) {
+    socket.emit("client_info", { model: model || "Unknown" });
+  }
+
+  if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+    navigator.userAgentData.getHighEntropyValues(["model"])
+      .then(function (ua) { sendInfo(ua.model); })
+      .catch(function () { sendInfo("Unknown"); });
+  } else {
+    sendInfo("Unknown"); // Chromium-only API; unavailable (Safari/Firefox) or non-mobile device
+  }
+})();
+</script>
+</body>
+</html>
