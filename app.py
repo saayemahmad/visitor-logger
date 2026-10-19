@@ -152,9 +152,7 @@ def log_entry(ip, country, model, ua, sid_short) -> None:
         f"{C.BG_GREEN}{C.BOLD} CONNECT {C.RESET}  "
         f"{C.GREEN}{C.BOLD}{ip:<18}{C.RESET}  "
         f"{_flag(country)} {C.CYAN}{country:<18}{C.RESET}  "
-        f"{C.YELLOW}device{C.RESET}: {C.WHITE}{model}{C.RESET}  "
-        f"{C.GRAY}sid:{sid_short}{C.RESET}",
-        extra=(f"{'':>32}{C.GRAY}ua: {ua[:96]}{C.RESET}" if ua else ""),
+        f"{C.YELLOW}device{C.RESET}: {C.WHITE}{model}{C.RESET}"
     )
 
 
@@ -165,8 +163,7 @@ def log_exit(ip, country, model, dur, sid_short) -> None:
         f"{C.RED}{ip:<18}{C.RESET}  "
         f"{_flag(country)} {C.CYAN}{country:<18}{C.RESET}  "
         f"{C.YELLOW}device{C.RESET}: {C.WHITE}{model:<22}{C.RESET}  "
-        f"{C.MAGENTA}on-site{C.RESET}: {C.BOLD}{dur}{C.RESET}  "
-        f"{C.GRAY}sid:{sid_short}{C.RESET}"
+        f"{C.MAGENTA}on-site{C.RESET}: {C.BOLD}{dur}{C.RESET}"
     )
 
 
@@ -175,7 +172,7 @@ def log_stale(ip, sid_short) -> None:
         f"{C.GRAY}[{_now()}]{C.RESET}  "
         f"{C.BG_YELLOW}{C.BOLD} STALE   {C.RESET}  "
         f"{C.YELLOW}{ip:<18}{C.RESET}  "
-        f"no heartbeat >{STALE_TIMEOUT}s  {C.GRAY}sid:{sid_short}{C.RESET}"
+        f"no heartbeat >{STALE_TIMEOUT}s"
     )
 
 
