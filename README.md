@@ -26,20 +26,20 @@ can see traffic without any third-party analytics tool.
 
 - Static fallback page — domain, deletion date, nameservers, re-registration price
 - Real-time visitor tracking over WebSocket (Socket.IO)
-- Per-visitor IP address
-- Per-visitor device model, via the browser's `navigator.userAgentData`
-  high-entropy API (Chromium browsers only)
-- Entry/exit timestamps and total time on page, printed to the terminal
-- No database, no external analytics — everything stays on your own server
+- Per-visitor IP address, country lookup, and device model
+- Live web-based log viewer (`/logs`) matching Render / Cloud console aesthetics
+- SQLite persistent log storage (`logs.db`)
+- Live Socket.IO streaming with automatic scroll-to-bottom
 
 ## Project structure
 
 ```
 server/
-├── app.py              # Flask + Socket.IO server
+├── app.py              # Flask + Socket.IO server & SQLite logging
 ├── requirements.txt    # Python dependencies
 └── templates/
-    └── index.html      # Fallback page + client-side tracking script
+    ├── index.html      # Fallback page + client-side tracking script
+    └── logs.html       # Real-time web log viewer (Render-style)
 ```
 
 ## Requirements

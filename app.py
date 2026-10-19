@@ -1,11 +1,18 @@
 """
-Fallback-page Visitor Logger  ·  v2.2
+Fallback-page Visitor Logger  ·  v2.3
 ======================================
 Terminal layout
   • Static event lines scroll normally (CONNECT / DISCONN / STALE / STATS)
   • One live status line at the bottom — rewritten in-place with \\r every
     second, showing every active visitor and their ticking duration.
     No multi-line tables, no ANSI cursor tricks, no duplicates.
+
+  NEW in v2.3:
+  • SQLite log storage  — every event is persisted to logs.db
+  • /logs               — beautiful real-time log viewer page
+  • /api/logs           — returns full log history as JSON
+  • /api/logs/clear     — deletes all logs from the DB
+  • SocketIO 'log_entry' event — pushed to all connected log-viewer clients
 
 Run:
     pip install flask flask-socketio eventlet requests
@@ -16,11 +23,12 @@ import os
 import sys
 import time
 import signal
+import sqlite3
 import threading
 from datetime import datetime
 
 import requests as http_requests
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -140,10 +148,83 @@ def _flag(country: str) -> str:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-#  Named log levels
+#  SQLite — persistent log storage
+# ──────────────────────────────────────────────────────────────────────────────
+DB_PATH = os.path.join(os.path.dirname(__file__), "logs.db")
+_db_lock = threading.Lock()
+
+
+def _db_connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _db_init() -> None:
+    with _db_lock:
+        conn = _db_connect()
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS logs (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT    NOT NULL,
+                level     TEXT    NOT NULL,
+                ip        TEXT,
+                country   TEXT,
+                model     TEXT,
+                duration  TEXT,
+                message   TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+
+def _db_save(level: str, ip: str = None, country: str = None,
+             model: str = None, duration: str = None, message: str = None) -> dict:
+    """Insert one log row; return it as a dict (for SocketIO broadcast)."""
+    ts = _now()
+    with _db_lock:
+        conn = _db_connect()
+        cur  = conn.execute(
+            "INSERT INTO logs (timestamp, level, ip, country, model, duration, message) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (ts, level, ip, country, model, duration, message)
+        )
+        row_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+    return {
+        "id": row_id, "timestamp": ts, "level": level,
+        "ip": ip, "country": country, "model": model,
+        "duration": duration, "message": message,
+    }
+
+
+def _db_all() -> list:
+    with _db_lock:
+        conn = _db_connect()
+        rows = conn.execute(
+            "SELECT id, timestamp, level, ip, country, model, duration, message "
+            "FROM logs ORDER BY id ASC"
+        ).fetchall()
+        conn.close()
+    return [dict(r) for r in rows]
+
+
+def _db_clear() -> None:
+    with _db_lock:
+        conn = _db_connect()
+        conn.execute("DELETE FROM logs")
+        conn.commit()
+        conn.close()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Named log levels  — each saves to DB then broadcasts via SocketIO
 # ──────────────────────────────────────────────────────────────────────────────
 def log_info(msg: str) -> None:
     _static(f"{C.GRAY}[{_now()}]{C.RESET}  {C.BLUE}INFO   {C.RESET}  {msg}")
+    _broadcast(_db_save("INFO", message=msg))
 
 
 def log_entry(ip, country, model, ua, sid_short) -> None:
@@ -154,6 +235,7 @@ def log_entry(ip, country, model, ua, sid_short) -> None:
         f"{_flag(country)} {C.CYAN}{country:<18}{C.RESET}  "
         f"{C.YELLOW}device{C.RESET}: {C.WHITE}{model}{C.RESET}"
     )
+    _broadcast(_db_save("CONNECT", ip=ip, country=country, model=model))
 
 
 def log_exit(ip, country, model, dur, sid_short) -> None:
@@ -165,25 +247,38 @@ def log_exit(ip, country, model, dur, sid_short) -> None:
         f"{C.YELLOW}device{C.RESET}: {C.WHITE}{model:<22}{C.RESET}  "
         f"{C.MAGENTA}on-site{C.RESET}: {C.BOLD}{dur}{C.RESET}"
     )
+    _broadcast(_db_save("DISCONN", ip=ip, country=country, model=model, duration=dur))
 
 
 def log_stale(ip, sid_short) -> None:
+    msg = f"no heartbeat >{STALE_TIMEOUT}s"
     _static(
         f"{C.GRAY}[{_now()}]{C.RESET}  "
         f"{C.BG_YELLOW}{C.BOLD} STALE   {C.RESET}  "
         f"{C.YELLOW}{ip:<18}{C.RESET}  "
-        f"no heartbeat >{STALE_TIMEOUT}s"
+        f"{msg}"
     )
+    _broadcast(_db_save("STALE", ip=ip, message=msg))
 
 
 def log_stats() -> None:
     with _sessions_lock:
         n = len(sessions)
+    msg = f"active visitors: {n}"
     _static(
         f"{C.GRAY}[{_now()}]{C.RESET}  "
         f"{C.BLUE}STATS  {C.RESET}  "
         f"active visitors: {C.BOLD}{C.CYAN}{n}{C.RESET}"
     )
+    _broadcast(_db_save("STATS", message=msg))
+
+
+def _broadcast(log_dict: dict) -> None:
+    """Emit 'log_entry' to all SocketIO clients (log viewer)."""
+    try:
+        socketio.emit("log_entry", log_dict)
+    except Exception:
+        pass  # server may not be ready yet during startup
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -257,6 +352,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/logs")
+def logs_viewer():
+    return render_template("logs.html")
+
+
 @app.route("/health")
 def health():
     with _sessions_lock:
@@ -264,11 +364,30 @@ def health():
     return {"status": "ok", "active_visitors": n, "ts": _now()}, 200
 
 
+# ── Log API endpoints ─────────────────────────────────────────────────────────
+@app.route("/api/logs", methods=["GET"])
+def api_logs():
+    """Return all stored logs as JSON (oldest first)."""
+    logs = _db_all()
+    return jsonify({"logs": logs, "count": len(logs)})
+
+
+@app.route("/api/logs/clear", methods=["POST"])
+def api_logs_clear():
+    """Delete all logs from the database."""
+    _db_clear()
+    return jsonify({"status": "ok", "message": "All logs cleared"})
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 #  SocketIO events
 # ──────────────────────────────────────────────────────────────────────────────
 @socketio.on("connect")
 def on_connect():
+    # Do not track or log connections from the /logs viewer page
+    if request.args.get("role") == "viewer":
+        return
+
     sid, ip, now = request.sid, _ip(), datetime.now()
     with _sessions_lock:
         sessions[sid] = {
@@ -369,8 +488,9 @@ def _sweeper():
 # ──────────────────────────────────────────────────────────────────────────────
 def _banner(port: int) -> None:
     sk = os.environ.get("SECRET_KEY")
-    _static(f"  {C.BOLD}{C.BLUE}Visitor Logger v2.2{C.RESET}")
+    _static(f"  {C.BOLD}{C.BLUE}Visitor Logger v2.3{C.RESET}")
     _static(f"  {C.CYAN}local{C.RESET}   →  http://localhost:{port}")
+    _static(f"  {C.CYAN}logs{C.RESET}    →  http://localhost:{port}/logs")
     _static(f"  {C.CYAN}health{C.RESET}  →  http://localhost:{port}/health")
     _static(
         f"  SECRET_KEY: "
@@ -396,6 +516,7 @@ signal.signal(signal.SIGINT,  _shutdown)
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+    _db_init()
     threading.Thread(target=_sweeper, daemon=True).start()
     threading.Thread(target=_ticker,  daemon=True).start()
     _banner(port)

@@ -11,3 +11,4 @@ venv.bak/
 .env
 .idea/
 .vscode/
+*.db
