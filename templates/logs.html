@@ -690,6 +690,7 @@
       </div>
 
       <button class="btn-text-action" id="btnWrapToggle" title="Toggle line wrapping">Wrap</button>
+      <button class="btn-text-action" id="btnReload" title="Reload logs from database">Reload</button>
       <button class="btn-text-action" id="btnClearView" title="Clear log view">Clear</button>
     </div>
   </div>
@@ -753,6 +754,7 @@
   };
 
   let allLogs       = [];
+  const knownIds    = new Set();
   let activeFilter  = 'ALL';
   let autoScroll    = true;
   let isLineWrap    = true;
@@ -886,6 +888,10 @@
   }
 
   function addLog(log, isNew) {
+    if (log && log.id !== undefined && log.id !== null) {
+      if (knownIds.has(log.id)) return;
+      knownIds.add(log.id);
+    }
     allLogs.push(log);
     const row = buildRow(log, isNew);
     const lv  = (log.level || 'INFO').toUpperCase();
@@ -893,7 +899,10 @@
     if (activeFilter !== 'ALL' && lv !== activeFilter) row.classList.add('hidden');
     if (searchQuery) {
       const text = (log.timestamp + ' ' + lv + ' ' + (log.ip||'') + ' ' + (log.country||'') + ' ' + (log.model||'') + ' ' + (log.message||'')).toLowerCase();
-      if (!text.includes(searchQuery.toLowerCase())) row.classList.add('hidden');
+      if (!text.includes(searchQuery.toLowerCase())) {
+        row.classList.add('hidden');
+        row.dataset.searchHide = '1';
+      }
     }
 
     panel.appendChild(row);
@@ -901,6 +910,49 @@
 
     if (isNew) lastUpEl.textContent = nowTimeStr();
     if (autoScroll) scrollToBottom(isNew);
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/logs');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data && Array.isArray(data.logs)) {
+        const fragment = document.createDocumentFragment();
+        let lastTs = null;
+        for (const log of data.logs) {
+          if (log && log.id !== undefined && log.id !== null) {
+            if (knownIds.has(log.id)) continue;
+            knownIds.add(log.id);
+          }
+          allLogs.push(log);
+          const row = buildRow(log, false);
+          const lv  = (log.level || 'INFO').toUpperCase();
+          if (activeFilter !== 'ALL' && lv !== activeFilter) row.classList.add('hidden');
+          if (searchQuery) {
+            const text = (log.timestamp + ' ' + lv + ' ' + (log.ip||'') + ' ' + (log.country||'') + ' ' + (log.model||'') + ' ' + (log.message||'')).toLowerCase();
+            if (!text.includes(searchQuery.toLowerCase())) {
+              row.classList.add('hidden');
+              row.dataset.searchHide = '1';
+            }
+          }
+          fragment.appendChild(row);
+          if (log.timestamp) lastTs = log.timestamp;
+        }
+        panel.appendChild(fragment);
+        updateCounts();
+        if (lastTs) {
+          const parts = lastTs.split(' ');
+          lastUpEl.textContent = parts[1] || lastTs;
+        }
+        if (autoScroll) {
+          scrollToBottom(false);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load log history:', err);
+      showToast('⚠ Failed to load log history');
+    }
   }
 
   function applyFilter(type) {
@@ -966,10 +1018,24 @@
     showToast(isLineWrap ? 'Line wrap: ON' : 'Line wrap: OFF');
   });
 
+  // Reload logs from DB
+  const reloadBtn = document.getElementById('btnReload');
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', async () => {
+      panel.querySelectorAll('.log-row').forEach(r => r.remove());
+      allLogs = [];
+      knownIds.clear();
+      updateCounts();
+      await loadHistory();
+      showToast('Logs reloaded from DB');
+    });
+  }
+
   // Clear view
   document.getElementById('btnClearView').addEventListener('click', () => {
     panel.querySelectorAll('.log-row').forEach(r => r.remove());
     allLogs = [];
+    knownIds.clear();
     updateCounts();
     showToast('View cleared (logs kept in DB)');
   });
@@ -982,6 +1048,7 @@
       .then(() => {
         panel.querySelectorAll('.log-row').forEach(r => r.remove());
         allLogs = [];
+        knownIds.clear();
         updateCounts();
         showToast('🗑 All database logs deleted');
       })
@@ -1011,6 +1078,9 @@
 
   // Fetch online visitor count on load
   fetch('/health').then(r => r.json()).then(d => { visitorEl.textContent = d.active_visitors; }).catch(() => {});
+
+  // Load log history from SQLite DB on page load
+  loadHistory();
 
 })();
 </script>

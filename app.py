@@ -321,6 +321,7 @@ def _geo(ip: str) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-this-in-production")
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
